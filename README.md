@@ -1,66 +1,93 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Kasirin Aja
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Kasirin Aja is a modern, responsive Point of Sale (POS) web application built using the Laravel framework. The application provides an essential set of tools designed specifically for retail and food & beverage businesses, focusing on streamlined checkout processes, inventory management, and robust sales analytics.
 
-## About Laravel
+## Core Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Dashboard & Analytics:** Real-time visibility into daily transaction volumes, monthly revenue, weekly sales charts, and top-selling products.
+- **Cashier (POS) Interface:** Interactive user interface enabling cashiers to instantly filter by categories, construct carts, manage product quantities, and handle various transaction types (Cash, Debit, QRIS) including automatic change calculation.
+- **Inventory Management:** Full CRUD operations allowing administrators to manage items, pricing, remaining stock, and categorization efficiently.
+- **Transaction History:** Comprehensive ledger of past transactions. Includes filtering by specific dates, payment methods, transaction invoice lookups, and direct raw data export to CSV format.
+- **Receipt Generation:** Dedicated, printable transaction receipt view optimized for thermal printers and standard A4 output.
+- **Modern Stack:** Constructed using Laravel 10, Tailwind CSS, Alpine.js, and standardized via Laravel Pint. Fully containerized leveraging Docker Compose for immediate deployment.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The project uses Docker for a streamlined and isolated development environment. Ensure the following dependencies are installed on your host machine:
 
-## Learning Laravel
+- Docker Desktop (or Docker Engine & Docker Compose plugin)
+- Make (optional, but highly recommended for executing commands easily)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Development Setup
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Follow these steps to set up the application using the automated Docker environment.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Clone the repository and navigate to the directory
 
-## Laravel Sponsors
+```bash
+git clone https://github.com/naidrahiqa/Kasirin-Aja.git
+cd "Kasirin Aja"
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Run the application
 
-### Premium Partners
+If you have `make` installed on your machine, simply run:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```bash
+make docker
+```
 
-## Contributing
+This single command will sequentially:
+1. Build the Docker images (PHP-FPM, Node.js, Composer).
+2. Start the Nginx, App, and MySQL containers.
+3. Install PHP dependencies via Composer.
+4. Install and compile NPM assets via Vite.
+5. Create and link environment configurations.
+6. Generate application keys.
+7. Run complete database migrations and seed default data.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Manual Docker Initialization (Without Make)
 
-## Code of Conduct
+If `make` is unavailable on your system, you can initialize the stack manually:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+docker compose build
+docker compose up -d
+docker compose exec app composer install
+docker compose exec app npm install
+docker compose exec app npm run build
+docker compose exec app cp -n .env.docker .env
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate:fresh --seed
+docker compose exec app php artisan storage:link
+```
 
-## Security Vulnerabilities
+## Accessing the Application
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Once the initialization steps are successfully finished, the application will be accessible directly in your web browser:
+
+- **Web Application URL:** http://localhost:8080
+
+**Default Testing Credentials:**
+- Email: admin@kasirin.test
+- Password: password
+
+## Application Architecture
+
+The system operates across three core containers interacting within a private Docker network:
+- `kasirin-nginx`: Reverse proxy directing HTTP traffic.
+- `kasirin-app`: PHP 8.3 FPM container processing application logic and running Laravel.
+- `kasirin-mysql`: MySQL 8.0 instance dedicated for data persistence stored safely in an isolated volume.
+
+## Maintenance Commands
+
+Standard commands provided via the Makefile for continuing development:
+- `make up`: Start all containers in detached mode.
+- `make down`: Stop and remove containers, networks, and images.
+- `make logs`: Display output logs from the containers securely.
+- `make npm-build`: Recompiles frontend assets tailored using Vite and Tailwind CSS.
+- `make artisan CMD="your:command"`: Executes specific artisan commands against the active container.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software distributed under the MIT license.
