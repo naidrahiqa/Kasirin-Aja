@@ -18,7 +18,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    if (auth()->check() && auth()->user()->isCashier()) {
+    /** @var \App\Models\User|null $user */
+    $user = auth()->user();
+
+    if ($user && $user->isCashier()) {
         return redirect()->route('pos.index');
     }
 
