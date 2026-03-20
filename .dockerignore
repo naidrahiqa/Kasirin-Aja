@@ -1,0 +1,40 @@
+# ============================================
+# .dockerignore - Kasirin Aja
+# ============================================
+# File/folder yang TIDAK perlu di-copy ke container
+# Mirip dengan .gitignore tapi untuk Docker
+# ============================================
+
+# Dependencies (akan di-install di dalam container)
+node_modules
+vendor
+
+# Environment file (akan di-buat khusus untuk Docker)
+.env
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files sendiri (tidak perlu di-copy)
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Testing
+tests
+phpunit.xml
+
+# Documentation
+README.md
