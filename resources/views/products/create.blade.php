@@ -15,6 +15,29 @@
         <form action="{{ route('products.store') }}" method="POST">
             @csrf
 
+            {{-- Barcode --}}
+            <div class="mb-6">
+                <label for="barcode" class="block text-sm font-semibold text-gray-700 mb-2">
+                    Barcode / SKU <span class="text-xs text-gray-400 font-normal">(Opsional)</span>
+                </label>
+                <div class="flex gap-2">
+                    <input type="text"
+                           id="barcode"
+                           name="barcode"
+                           value="{{ old('barcode') }}"
+                           placeholder="Scan barcode di sini atau kosongkan..."
+                           class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder-gray-400
+                                  focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all duration-200
+                                  @error('barcode') border-red-300 @enderror">
+                    <button type="button" onclick="document.getElementById('barcode').value = 'PRD-' + Math.floor(Math.random() * 1000000)" class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors">
+                        Generate
+                    </button>
+                </div>
+                @error('barcode')
+                    <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             {{-- Name --}}
             <div class="mb-6">
                 <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">

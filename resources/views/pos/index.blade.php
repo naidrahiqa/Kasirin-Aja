@@ -40,44 +40,56 @@
 
         {{-- Product Grid --}}
         <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-            @foreach ($products as $product)
+            <template x-for="product in products" :key="product.id">
                 <button
-                    x-show="(activeCategory === 0 || activeCategory === {{ $product->category_id ?? 'null' }}) && ('{{ strtolower($product->name) }}'.includes(searchQuery.toLowerCase()) || searchQuery === '')"
                     x-on:click="addToCart({
-                        id: {{ $product->id }},
-                        name: '{{ addslashes($product->name) }}',
-                        price: {{ $product->price }},
-                        stock: {{ $product->stock }}
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        stock: product.stock
                     })"
                     class="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 p-4 text-left shadow-sm
                            hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 active:scale-[0.95]"
-                    :class="getCartQty({{ $product->id }}) > 0 ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/30' : ''"
+                    :class="getCartQty(product.id) > 0 ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/30' : ''"
                 >
                     {{-- Product Emoji / Icon --}}
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 text-xl mb-3">
-                        <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                        <svg class="w-5 h-5 inline-block mr-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                     </div>
                     {{-- Product Info --}}
-                    <h3 class="text-sm font-semibold text-gray-900 truncate">{{ $product->name }}</h3>
-                    <p class="mt-1 text-sm font-bold text-indigo-600">Rp {{ number_format($product->price, 0, ',', '.') }}</p>
-                    <p class="mt-0.5 text-xs text-gray-400">Stok: {{ $product->stock }}</p>
+                    <h3 class="text-sm font-semibold text-gray-900 truncate" x-text="product.name"></h3>
+                    <p class="mt-1 text-sm font-bold text-indigo-600">Rp <span x-text="formatNumber(product.price)"></span></p>
+                    <p class="mt-0.5 text-xs text-gray-400">Stok: <span x-text="product.stock"></span></p>
 
                     {{-- Cart Quantity Badge --}}
-                    <div x-show="getCartQty({{ $product->id }}) > 0"
+                    <div x-show="getCartQty(product.id) > 0"
                          x-transition
                          class="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white shadow-sm">
-                        <span x-text="getCartQty({{ $product->id }})"></span>
+                        <span x-text="getCartQty(product.id)"></span>
                     </div>
                 </button>
-            @endforeach
+            </template>
         </div>
-
-        @if ($products->isEmpty())
-            <div class="rounded-2xl bg-white border border-gray-100 p-12 text-center">
-                <p class="text-gray-400 text-sm">Belum ada produk tersedia.</p>
-                <a href="{{ route('products.create') }}" class="mt-2 inline-block text-indigo-600 text-sm hover:underline">Tambah produk baru →</a>
-            </div>
-        @endif
+        
+        {{-- Load More / Loading State --}}
+        <div class="mt-8 text-center pb-8">
+            <template x-if="isFetchingProducts">
+                <div class="inline-flex items-center text-sm text-gray-400">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Memuat produk...
+                </div>
+            </template>
+            <template x-if="!isFetchingProducts && hasMoreProducts">
+                <button x-on:click="fetchProducts(false)" class="rounded-full bg-white border border-gray-200 px-6 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm transition">
+                    Tampilkan Lebih Banyak
+                </button>
+            </template>
+            <template x-if="!isFetchingProducts && products.length === 0">
+                <div class="rounded-2xl bg-white border border-gray-100 p-12 text-center mt-4">
+                    <p class="text-gray-400 text-sm">Produk tidak ditemukan.</p>
+                </div>
+            </template>
+        </div>
     </div>
 
     {{-- ═══ RIGHT COLUMN: Cart Summary ═══ --}}
@@ -266,12 +278,17 @@
 function posApp() {
     return {
         cart: [],
+        products: [],
         searchQuery: '',
         activeCategory: 0,
+        productsPage: 1,
+        hasMoreProducts: true,
+        isFetchingProducts: false,
         paymentMethod: 'cash',
         isLoading: false,
         isModalOpen: false,
         cashGiven: 0,
+        searchDebounce: null,
 
         init() {
             // Restore cart from sessionStorage (persists across page navigations)
@@ -284,6 +301,96 @@ function posApp() {
             this.$watch('cart', (val) => {
                 sessionStorage.setItem('pos_cart', JSON.stringify(val));
             }, { deep: true });
+
+            this.$watch('searchQuery', () => {
+                clearTimeout(this.searchDebounce);
+                this.searchDebounce = setTimeout(() => {
+                    this.fetchProducts(true);
+                }, 300);
+            });
+
+            this.$watch('activeCategory', () => {
+                this.fetchProducts(true);
+            });
+
+            // Initial Load
+            this.fetchProducts(true);
+
+            // Global Barcode Scanner Listener
+            let barcodeString = '';
+            let barcodeTimeout;
+            
+            document.addEventListener('keydown', (e) => {
+                // Ignore if modal is open or typing in a text input manually
+                if (this.isModalOpen || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    if (e.target.id !== 'barcode_hidden_input') return;
+                }
+
+                if (e.key === 'Enter' && barcodeString.length > 0) {
+                    e.preventDefault();
+                    this.scanBarcode(barcodeString);
+                    barcodeString = '';
+                } else if (e.key.length === 1) { // Normal characters
+                    barcodeString += e.key;
+                    
+                    // Clear buffer if there's a long delay (human typing vs scanner)
+                    clearTimeout(barcodeTimeout);
+                    barcodeTimeout = setTimeout(() => {
+                        barcodeString = '';
+                    }, 50); // 50ms timeout (scanners are usually 10-20ms per char)
+                }
+            });
+        },
+
+        async scanBarcode(barcode) {
+            try {
+                const response = await fetch(`/products/barcode/${barcode}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.addToCart(data.data);
+                    // Optional visual feedback
+                    const searchInput = document.querySelector('input[placeholder="Cari produk..."]');
+                    if (searchInput) {
+                        searchInput.classList.add('bg-emerald-50');
+                        setTimeout(() => searchInput.classList.remove('bg-emerald-50'), 300);
+                    }
+                } else {
+                    alert('Produk tidak ditemukan: ' + barcode);
+                }
+            } catch (err) {
+                console.error('Scan error:', err);
+            }
+        },
+
+        async fetchProducts(reset = false) {
+            if (reset) {
+                this.productsPage = 1;
+                this.products = [];
+                this.hasMoreProducts = true;
+            }
+
+            if (!this.hasMoreProducts || this.isFetchingProducts && !reset) return;
+            
+            this.isFetchingProducts = true;
+            
+            try {
+                const response = await fetch(`/api/pos/products?page=${this.productsPage}&search=${encodeURIComponent(this.searchQuery)}&category_id=${this.activeCategory}`);
+                const data = await response.json();
+                
+                if (reset) {
+                    this.products = data.data;
+                } else {
+                    this.products = [...this.products, ...data.data];
+                }
+                
+                this.hasMoreProducts = data.current_page < data.last_page;
+                this.productsPage++;
+            } catch (err) {
+                console.error('Failed to fetch products:', err);
+            } finally {
+                this.isFetchingProducts = false;
+            }
         },
 
         /**

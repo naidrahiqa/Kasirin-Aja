@@ -65,6 +65,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
+            'barcode' => 'nullable|string|max:255|unique:products,barcode',
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
@@ -94,6 +95,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
+            'barcode' => 'nullable|string|max:255|unique:products,barcode,' . $product->id,
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
@@ -118,5 +120,36 @@ class ProductController extends Controller
         return redirect()
             ->route('products.index')
             ->with('success', 'Produk berhasil dihapus!');
+    }
+
+    /**
+     * Find product by barcode via API for scanner.
+     */
+    public function findByBarcode($barcode)
+    {
+        $product = Product::where('barcode', $barcode)->first();
+
+        if ($product) {
+            return response()->json([
+                'success' => true,
+                'data' => $product
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Produk tidak ditemukan'
+        ], 404);
+    }
+
+    /**
+     * Show view to print barcode labels.
+     */
+    public function printLabels()
+    {
+        // Only load products that have barcodes
+        $products = Product::whereNotNull('barcode')->where('barcode', '!=', '')->get();
+
+        return view('products.print_labels', compact('products'));
     }
 }

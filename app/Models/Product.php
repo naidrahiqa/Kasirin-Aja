@@ -17,10 +17,19 @@ class Product extends Model
      */
     protected $fillable = [
         'category_id',
+        'barcode',
         'name',
         'price',
         'stock',
     ];
+
+    /**
+     * Get the stock mutations for the product.
+     */
+    public function stockMutations(): HasMany
+    {
+        return $this->hasMany(StockMutation::class);
+    }
 
     /**
      * The attributes that should be cast.

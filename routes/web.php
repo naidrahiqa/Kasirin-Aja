@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,8 +39,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('dashboard');
 
         // Product Management (CRUD)
+        Route::get('products/print-labels', [ProductController::class, 'printLabels'])
+            ->name('products.printLabels');
         Route::resource('products', ProductController::class)
             ->except(['show']); // We don't need a show page for products
+
+        // Stock Adjustment
+        Route::get('/stocks/adjustment', [StockController::class, 'adjustment'])
+            ->name('stocks.adjustment');
+        Route::post('/stocks/adjustment', [StockController::class, 'storeAdjustment'])
+            ->name('stocks.storeAdjustment');
 
         // Category Management (CRUD)
         Route::resource('categories', CategoryController::class)
@@ -50,6 +59,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // POS Cashier Interface
     Route::get('/pos', [POSController::class, 'index'])
         ->name('pos.index');
+    Route::get('/api/pos/products', [POSController::class, 'getProducts'])
+        ->name('pos.products');
+
+    // API-like Route for Barcode Scanner
+    Route::get('/products/barcode/{barcode}', [ProductController::class, 'findByBarcode'])
+        ->name('products.barcode');
 
     // Transactions
     Route::post('/transactions/checkout', [TransactionController::class, 'checkout'])

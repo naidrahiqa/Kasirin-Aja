@@ -210,23 +210,10 @@ class TransactionController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $transactions = $query->latest()->paginate(20)->appends($request->query());
+        $transactions = (clone $query)->latest()->paginate(20)->appends($request->query());
 
-        // Summary stats for the filtered results
-        $summaryQuery = Transaction::query();
-
-        if ($request->filled('search')) {
-            $summaryQuery->where('invoice_number', 'like', '%'.$request->search.'%');
-        }
-        if ($request->filled('method') && $request->method !== 'all') {
-            $summaryQuery->where('payment_method', $request->method);
-        }
-        if ($request->filled('date_from')) {
-            $summaryQuery->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $summaryQuery->whereDate('created_at', '<=', $request->date_to);
-        }
+        // Summary stats for the filtered results (Optimization: reuse the query)
+        $summaryQuery = clone $query;
 
         $totalFiltered = $summaryQuery->sum('total_amount');
         $countFiltered = $summaryQuery->count();
