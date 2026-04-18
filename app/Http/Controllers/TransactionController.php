@@ -132,8 +132,8 @@ class TransactionController extends Controller
         if ($request->filled('search')) {
             $query->where('invoice_number', 'like', '%'.$request->search.'%');
         }
-        if ($request->filled('method') && $request->method !== 'all') {
-            $query->where('payment_method', $request->method);
+        if ($request->filled('method') && $request->input('method') !== 'all') {
+            $query->where('payment_method', $request->input('method'));
         }
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
@@ -198,8 +198,8 @@ class TransactionController extends Controller
         }
 
         // Filter by payment method
-        if ($request->filled('method') && $request->method !== 'all') {
-            $query->where('payment_method', $request->method);
+        if ($request->filled('method') && $request->input('method') !== 'all') {
+            $query->where('payment_method', $request->input('method'));
         }
 
         // Filter by date range
