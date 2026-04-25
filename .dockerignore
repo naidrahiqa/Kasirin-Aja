@@ -38,3 +38,7 @@ phpunit.xml
 
 # Documentation
 README.md
+
+# Laravel symlinks & Vite dev artifacts (created at runtime)
+public/storage
+public/hot
