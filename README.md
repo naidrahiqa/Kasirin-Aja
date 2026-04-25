@@ -85,5 +85,3 @@ Kasirin-Aja/
     ```
 
 ---
-
-Dibuat dengan ❤️ oleh [naidrahiqa](https://github.com/naidrahiqa)
