@@ -46,20 +46,29 @@ class DashboardController extends Controller
             ->get();
 
         // Sales grouped by day for the last 7 days (for chart data)
-        $weeklySales = Transaction::select(
+        // Build a full 7-day range first so empty days show as 0
+        $last7Days = collect(range(6, 0))->map(fn($i) => [
+            'date'  => Carbon::today()->subDays($i)->toDateString(),
+            'total' => 0.0,
+        ])->keyBy('date');
+
+        $dbSales = Transaction::select(
             DB::raw('DATE(created_at) as date'),
             DB::raw('SUM(total_amount) as total')
         )
-            ->where('created_at', '>=', Carbon::now()->subDays(7)->startOfDay())
+            ->where('created_at', '>=', Carbon::today()->subDays(6)->startOfDay())
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date', 'asc')
             ->get()
-            ->map(function ($item) {
-                return [
-                    'date' => $item->date,
-                    'total' => (float) $item->total,
-                ];
-            });
+            ->keyBy('date');
+
+        // Merge DB results into the full 7-day range
+        $weeklySales = $last7Days->map(function ($day) use ($dbSales) {
+            if ($dbSales->has($day['date'])) {
+                $day['total'] = (float) $dbSales[$day['date']]->total;
+            }
+            return $day;
+        })->values();
 
         // Top 5 best-selling products (by quantity sold)
         $topProducts = DB::table('transaction_details')

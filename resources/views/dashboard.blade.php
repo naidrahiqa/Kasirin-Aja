@@ -58,39 +58,102 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     {{-- Weekly Sales Chart (Takes 2 columns) --}}
     <div class="lg:col-span-2 rounded-xl bg-white p-5 shadow-sm border border-gray-100">
-        <h2 class="text-base font-semibold text-gray-900 mb-6 flex items-center gap-2">
+        <h2 class="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             Penjualan 7 Hari Terakhir
         </h2>
 
         @php
             $maxSale = $weeklySales->max('total') ?: 1;
+            $chartW   = 560;
+            $chartH   = 160;
+            $padLeft  = 48;
+            $padRight = 16;
+            $padTop   = 12;
+            $padBot   = 28;
+            $innerW   = $chartW - $padLeft - $padRight;
+            $innerH   = $chartH - $padTop - $padBot;
+            $n        = count($weeklySales);
+            $stepX    = $n > 1 ? $innerW / ($n - 1) : $innerW;
+
+            $points = [];
+            foreach ($weeklySales as $i => $day) {
+                $x = $padLeft + ($n > 1 ? $i * $stepX : $innerW / 2);
+                $y = $padTop + $innerH - ($day['total'] / $maxSale) * $innerH;
+                $points[] = ['x' => $x, 'y' => $y, 'total' => $day['total'], 'date' => $day['date']];
+            }
+
+            // Polyline string
+            $polyline = collect($points)->map(fn($p) => "{$p['x']},{$p['y']}")->implode(' ');
+
+            // Area fill path: go down to baseline, back left, close
+            $areaPath = "M {$points[0]['x']},{$points[0]['y']} ";
+            foreach (array_slice($points, 1) as $p) {
+                $areaPath .= "L {$p['x']},{$p['y']} ";
+            }
+            $baseline = $padTop + $innerH;
+            $areaPath .= "L {$points[count($points)-1]['x']},{$baseline} L {$points[0]['x']},{$baseline} Z";
+
+            // Y-axis ticks (4 lines)
+            $yTicks = [0, 0.25, 0.5, 0.75, 1.0];
         @endphp
 
-        <div class="flex items-end gap-3 h-48">
-            @forelse ($weeklySales as $day)
-                @php
-                    $heightPercent = ($day['total'] / $maxSale) * 100;
-                @endphp
-                <div class="flex-1 flex flex-col items-center gap-2 group">
-                    <span class="text-xs font-medium text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                        Rp {{ number_format($day['total'] / 1000, 0) }}k
-                    </span>
-                    <div class="w-full rounded-t-lg bg-gradient-to-t from-indigo-500 to-purple-400 transition-all duration-500 hover:from-indigo-400 hover:to-purple-300 cursor-pointer"
-                         @style(['height: ' . max($heightPercent, 4) . '%'])
-                         title="Rp {{ number_format($day['total'], 0, ',', '.') }}">
-                    </div>
-                    <span class="text-xs text-gray-500">
-                        {{ \Carbon\Carbon::parse($day['date'])->format('d/m') }}
-                    </span>
-                </div>
-            @empty
-                <div class="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                    Belum ada data penjualan.
-                </div>
-            @endforelse
+        <div class="w-full overflow-x-auto">
+            <svg viewBox="0 0 {{ $chartW }} {{ $chartH }}" class="w-full" style="min-width:280px;height:180px;" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#6366f1" stop-opacity="0.02"/>
+                    </linearGradient>
+                </defs>
+
+                {{-- Y grid lines --}}
+                @foreach($yTicks as $t)
+                    @php $gy = $padTop + $innerH - $t * $innerH; @endphp
+                    <line x1="{{ $padLeft }}" y1="{{ $gy }}" x2="{{ $chartW - $padRight }}" y2="{{ $gy }}"
+                          stroke="#e5e7eb" stroke-width="1"/>
+                    @if($t > 0)
+                        <text x="{{ $padLeft - 4 }}" y="{{ $gy + 4 }}" text-anchor="end"
+                              font-size="9" fill="#9ca3af">
+                            {{ number_format(($maxSale * $t) / 1000, 0) }}k
+                        </text>
+                    @endif
+                @endforeach
+
+                {{-- Area fill --}}
+                @if(count($points) > 1)
+                    <path d="{{ $areaPath }}" fill="url(#areaGrad)"/>
+                @endif
+
+                {{-- Line --}}
+                @if(count($points) > 1)
+                    <polyline points="{{ $polyline }}" fill="none" stroke="#6366f1" stroke-width="2.5"
+                              stroke-linejoin="round" stroke-linecap="round"/>
+                @endif
+
+                {{-- Data points + labels --}}
+                @foreach($points as $p)
+                    {{-- Group: circle + tooltip title --}}
+                    <g>
+                        <title>{{ \Carbon\Carbon::parse($p['date'])->format('d M Y') }}: Rp {{ number_format($p['total'], 0, ',', '.') }}</title>
+                        <circle cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="6" fill="transparent" stroke="transparent"/>
+                        <circle cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4" fill="white" stroke="#6366f1" stroke-width="2"/>
+                    </g>
+                    <text x="{{ $p['x'] }}" y="{{ $padTop + $innerH + 18 }}" text-anchor="middle"
+                          font-size="9" fill="#6b7280">
+                        {{ \Carbon\Carbon::parse($p['date'])->format('d/m') }}
+                    </text>
+                @endforeach
+            </svg>
+        </div>
+
+        {{-- Summary below chart --}}
+        <div class="mt-2 flex items-center gap-2 text-xs text-gray-400">
+            <span class="inline-block w-3 h-0.5 bg-indigo-500 rounded"></span>
+            Total penjualan per hari (7 hari terakhir)
         </div>
     </div>
+
 
     {{-- Top Products (Takes 1 column) --}}
     <div class="rounded-xl bg-white p-5 shadow-sm border border-gray-100">
