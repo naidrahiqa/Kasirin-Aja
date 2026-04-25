@@ -4,7 +4,6 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\StockController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,12 +40,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Product Management (CRUD)
         Route::resource('products', ProductController::class)
             ->except(['show']); // We don't need a show page for products
-
-        // Stock Adjustment
-        Route::get('/stocks/adjustment', [StockController::class, 'adjustment'])
-            ->name('stocks.adjustment');
-        Route::post('/stocks/adjustment', [StockController::class, 'storeAdjustment'])
-            ->name('stocks.storeAdjustment');
 
         // Category Management (CRUD)
         Route::resource('categories', CategoryController::class)
