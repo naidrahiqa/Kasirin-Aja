@@ -39,8 +39,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('dashboard');
 
         // Product Management (CRUD)
-        Route::get('products/print-labels', [ProductController::class, 'printLabels'])
-            ->name('products.printLabels');
         Route::resource('products', ProductController::class)
             ->except(['show']); // We don't need a show page for products
 
@@ -62,9 +60,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/pos/products', [POSController::class, 'getProducts'])
         ->name('pos.products');
 
-    // API-like Route for Barcode Scanner
-    Route::get('/products/barcode/{barcode}', [ProductController::class, 'findByBarcode'])
-        ->name('products.barcode');
+    // API-like Route for Barcode Scanner (REMOVED)
+    // Route::get('/products/barcode/{barcode}', [ProductController::class, 'findByBarcode']);
 
     // Transactions
     Route::post('/transactions/checkout', [TransactionController::class, 'checkout'])

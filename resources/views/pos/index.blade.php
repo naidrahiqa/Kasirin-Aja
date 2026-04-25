@@ -315,52 +315,6 @@ function posApp() {
 
             // Initial Load
             this.fetchProducts(true);
-
-            // Global Barcode Scanner Listener
-            let barcodeString = '';
-            let barcodeTimeout;
-            
-            document.addEventListener('keydown', (e) => {
-                // Ignore if modal is open or typing in a text input manually
-                if (this.isModalOpen || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                    if (e.target.id !== 'barcode_hidden_input') return;
-                }
-
-                if (e.key === 'Enter' && barcodeString.length > 0) {
-                    e.preventDefault();
-                    this.scanBarcode(barcodeString);
-                    barcodeString = '';
-                } else if (e.key.length === 1) { // Normal characters
-                    barcodeString += e.key;
-                    
-                    // Clear buffer if there's a long delay (human typing vs scanner)
-                    clearTimeout(barcodeTimeout);
-                    barcodeTimeout = setTimeout(() => {
-                        barcodeString = '';
-                    }, 50); // 50ms timeout (scanners are usually 10-20ms per char)
-                }
-            });
-        },
-
-        async scanBarcode(barcode) {
-            try {
-                const response = await fetch(`/products/barcode/${barcode}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    this.addToCart(data.data);
-                    // Optional visual feedback
-                    const searchInput = document.querySelector('input[placeholder="Cari produk..."]');
-                    if (searchInput) {
-                        searchInput.classList.add('bg-emerald-50');
-                        setTimeout(() => searchInput.classList.remove('bg-emerald-50'), 300);
-                    }
-                } else {
-                    alert('Produk tidak ditemukan: ' + barcode);
-                }
-            } catch (err) {
-                console.error('Scan error:', err);
-            }
         },
 
         async fetchProducts(reset = false) {

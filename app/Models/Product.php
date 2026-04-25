@@ -19,6 +19,7 @@ class Product extends Model
         'category_id',
         'barcode',
         'name',
+        'cost_price',
         'price',
         'stock',
     ];
@@ -35,6 +36,7 @@ class Product extends Model
      * The attributes that should be cast.
      */
     protected $casts = [
+        'cost_price' => 'decimal:2',
         'price' => 'decimal:2',
         'stock' => 'integer',
     ];
